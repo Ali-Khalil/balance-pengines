@@ -22,6 +22,8 @@ lib/
  │    ├── balance_logic.dart
  │    ├── ai_engine.dart
  │    ├── game_state.dart
+ │    ├── app_storage.dart
+ │    └── app_config.dart
  │
  ├── models/
  │    ├── piece.dart
@@ -33,23 +35,127 @@ lib/
  │    ├── piece_widget.dart
  │    ├── game_screen.dart
  │    ├── home_screen.dart
+ │    └── settings_screen.dart
  │
  └── main.dart
 ```
 
-## Run
+## Local setup (development environment)
+
+### 1) Install required tools
+- Flutter SDK (stable channel)
+- Dart SDK (comes with Flutter)
+- Android Studio (for Android SDK + emulator)
+- Xcode (macOS only, for iOS builds)
+
+Check installation:
 
 ```bash
+flutter --version
+flutter doctor
+```
+
+Resolve all issues reported by `flutter doctor` before continuing.
+
+### 2) Clone and bootstrap
+
+```bash
+git clone <your-repo-url>
+cd balance-pengines
 flutter pub get
+```
+
+### 3) Run the app
+
+```bash
 flutter run
 ```
 
-## Test
+You can target specific devices:
+
+```bash
+flutter devices
+flutter run -d <device_id>
+```
+
+## Testing and quality checks
+
+Run unit tests:
 
 ```bash
 flutter test
 ```
 
+Recommended static checks:
+
+```bash
+flutter analyze
+```
+
+Optional formatting:
+
+```bash
+dart format lib test
+```
+
+## Production build and publishing
+
+> This repository currently contains Dart source only. To publish to stores, ensure standard Flutter platform folders (`android/`, `ios/`) are present in your app project.
+
+### Android (Google Play)
+
+#### 1) Build release artifact
+Use either App Bundle (recommended) or APK:
+
+```bash
+flutter build appbundle --release
+# or
+flutter build apk --release
+```
+
+Output (AAB):
+- `build/app/outputs/bundle/release/app-release.aab`
+
+#### 2) App signing (required)
+- Create/upload keystore
+- Configure signing in `android/key.properties` and `android/app/build.gradle`
+
+#### 3) Publish to Play Console
+- Create application listing
+- Upload `app-release.aab`
+- Fill store listing, data safety, privacy policy, content rating
+- Roll out to internal test, closed/open testing, then production
+
+### iOS (App Store)
+
+#### 1) Build iOS release
+
+```bash
+flutter build ios --release
+```
+
+#### 2) Archive in Xcode
+- Open `ios/Runner.xcworkspace` in Xcode
+- Select **Any iOS Device (arm64)**
+- Product → Archive
+- Validate and upload using Organizer
+
+#### 3) Publish in App Store Connect
+- Create app record
+- Add screenshots, metadata, privacy details
+- Select uploaded build
+- Submit for review
+
+## Versioning before release
+
+Update `version` in `pubspec.yaml`:
+
+```yaml
+version: 1.0.0+1
+```
+
+- `1.0.0` = user-visible version
+- `+1` = build number (must increase each upload)
 
 ## Permissions
 
