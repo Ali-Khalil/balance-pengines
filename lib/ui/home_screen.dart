@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../core/app_storage.dart';
 import '../models/level.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -34,7 +35,29 @@ class HomeScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
                 const Text('Deterministic puzzle strategy. Place wisely!'),
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
+                FutureBuilder<GameStatsSnapshot>(
+                  future: AppStorage.instance.loadStats(),
+                  builder: (context, snapshot) {
+                    final stats = snapshot.data;
+                    final levelsPlayed = stats?.levelsPlayed.length ?? 0;
+                    final wins = stats?.wins ?? 0;
+                    final losses = stats?.losses ?? 0;
+                    return Container(
+                      width: double.infinity,
+                      margin: const EdgeInsets.only(bottom: 14),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.82),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Text(
+                        'Progress • Levels played: $levelsPlayed  • Wins: $wins  • Losses: $losses',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    );
+                  },
+                ),
                 _HomeButton(
                   label: 'Solo Levels',
                   onTap: () => context.push('/levels'),

@@ -12,6 +12,7 @@ Deterministic Flutter puzzle game where players place weighted penguin pieces on
 - `go_router` navigation with Home / Solo / VS AI / Settings
 - Dedicated settings screen with continue flow
 - Play win confetti feedback
+- Local persistence for settings + progress (wins/losses/levels played)
 
 ## Structure
 
@@ -48,3 +49,10 @@ flutter run
 ```bash
 flutter test
 ```
+
+
+## Permissions
+
+This app currently uses local key-value storage (`shared_preferences`) only and does not request dangerous runtime permissions.
+
+Permission policy is documented in `lib/core/app_config.dart` (`requiredRuntimePermissions` is empty).

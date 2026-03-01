@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 
 import '../models/level.dart';
 import '../models/piece.dart';
 import '../models/slot.dart';
 import 'ai_engine.dart';
+import 'app_storage.dart';
 import 'balance_logic.dart';
 
 enum GameMode { solo, vsAi }
@@ -27,6 +30,11 @@ class GameState extends ChangeNotifier {
   GameStatus _status = GameStatus.playing;
   int _torque = 0;
   int _pieceCounter = 0;
+  final Set<String> _levelsPlayed = <String>{};
+  int _wins = 0;
+  int _losses = 0;
+  String? _activeLevelId;
+  bool _completionRecorded = false;
 
   List<BoardSlot> get slots => List.unmodifiable(_slots);
   List<Piece> get availablePieces => List.unmodifiable(_availablePieces);
@@ -36,9 +44,24 @@ class GameState extends ChangeNotifier {
   GameStatus get status => _status;
   int get torque => _torque;
   double get tiltDegrees => balanceLogic.torqueToAngleDegrees(_torque);
+  int get wins => _wins;
+  int get losses => _losses;
+  List<String> get levelsPlayed => List.unmodifiable(_levelsPlayed);
+
+  Future<void> loadPersistedState() async {
+    final snapshot = await AppStorage.instance.loadStats();
+    _levelsPlayed
+      ..clear()
+      ..addAll(snapshot.levelsPlayed);
+    _wins = snapshot.wins;
+    _losses = snapshot.losses;
+    notifyListeners();
+  }
 
   void startSoloLevel(Level level) {
     _mode = GameMode.solo;
+    _completionRecorded = false;
+    _activeLevelId = level.id;
     _turn = Turn.player;
     _status = GameStatus.playing;
     _slots = buildDefaultSlots();
@@ -59,6 +82,8 @@ class GameState extends ChangeNotifier {
 
   void startVsAi() {
     _mode = GameMode.vsAi;
+    _completionRecorded = false;
+    _activeLevelId = null;
     _turn = Turn.player;
     _status = GameStatus.playing;
     _slots = buildDefaultSlots();
@@ -159,11 +184,13 @@ class GameState extends ChangeNotifier {
   void _resolveAfterMove({required Turn actor}) {
     if (!balanceLogic.isBalanced(_torque)) {
       _status = actor == Turn.player ? GameStatus.lost : GameStatus.won;
+      _recordCompletionIfNeeded();
       return;
     }
 
     if (_availablePieces.isEmpty) {
       _status = GameStatus.won;
+      _recordCompletionIfNeeded();
       return;
     }
 
@@ -192,4 +219,28 @@ class GameState extends ChangeNotifier {
   void _refreshTorque() {
     _torque = balanceLogic.computeTorque(_slots);
   }
+
+  void _recordCompletionIfNeeded() {
+    if (_completionRecorded || _status == GameStatus.playing) return;
+    _completionRecorded = true;
+
+    if (_status == GameStatus.won) {
+      _wins += 1;
+    } else if (_status == GameStatus.lost) {
+      _losses += 1;
+    }
+
+    if (_activeLevelId != null) {
+      _levelsPlayed.add(_activeLevelId!);
+    }
+
+    unawaited(
+      AppStorage.instance.saveStats(
+        levelsPlayed: _levelsPlayed.toList(growable: false),
+        wins: _wins,
+        losses: _losses,
+      ),
+    );
+  }
+
 }
