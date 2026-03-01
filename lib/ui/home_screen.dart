@@ -47,9 +47,7 @@ class HomeScreen extends StatelessWidget {
                 const SizedBox(height: 12),
                 _HomeButton(
                   label: 'Settings',
-                  onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Settings coming soon')), 
-                  ),
+                  onTap: () => context.push('/settings'),
                 ),
                 const SizedBox(height: 20),
                 Expanded(

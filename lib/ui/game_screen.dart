@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 
 import '../core/ai_engine.dart';
@@ -26,7 +27,9 @@ class GameScreen extends StatefulWidget {
 class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateMixin {
   late final GameState gameState;
   late final AnimationController _placementController;
+  late final ConfettiController _confettiController;
 
+  GameStatus _lastStatus = GameStatus.playing;
   Piece? _animatingPiece;
   String? _targetSlotId;
 
@@ -41,6 +44,7 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
       vsync: this,
       duration: const Duration(milliseconds: 420),
     );
+    _confettiController = ConfettiController(duration: const Duration(milliseconds: 900));
 
     if (widget.vsAi) {
       gameState.startVsAi();
@@ -52,6 +56,7 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
   @override
   void dispose() {
     _placementController.dispose();
+    _confettiController.dispose();
     gameState.dispose();
     super.dispose();
   }
@@ -86,6 +91,12 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
     return AnimatedBuilder(
       animation: Listenable.merge([gameState, _placementController]),
       builder: (context, _) {
+        if (gameState.status != _lastStatus) {
+          if (gameState.status == GameStatus.won) {
+            _confettiController.play();
+          }
+          _lastStatus = gameState.status;
+        }
         return Scaffold(
           appBar: AppBar(
             title: Text(widget.vsAi ? 'VS Deterministic AI' : 'Solo: ${widget.level!.name}'),
@@ -142,6 +153,18 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
                               },
                             ),
                         ],
+                      ),
+                    ),
+                  ),
+                  Align(
+                    alignment: Alignment.topCenter,
+                    child: IgnorePointer(
+                      child: ConfettiWidget(
+                        confettiController: _confettiController,
+                        blastDirectionality: BlastDirectionality.explosive,
+                        shouldLoop: false,
+                        numberOfParticles: 22,
+                        gravity: 0.25,
                       ),
                     ),
                   ),

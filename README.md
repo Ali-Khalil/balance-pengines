@@ -9,7 +9,9 @@ Deterministic Flutter puzzle game where players place weighted penguin pieces on
 - Deterministic AI mode (no randomness)
 - State-driven board tilt + wobble animation
 - Pseudo-3D board and piece styling
-- `go_router` navigation with Home / Solo / VS AI
+- `go_router` navigation with Home / Solo / VS AI / Settings
+- Dedicated settings screen with continue flow
+- Play win confetti feedback
 
 ## Structure
 

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'models/level.dart';
 import 'ui/game_screen.dart';
 import 'ui/home_screen.dart';
+import 'ui/settings_screen.dart';
 
 void main() {
   runApp(const PenguinBalanceApp());
@@ -38,8 +40,14 @@ class PenguinBalanceApp extends StatelessWidget {
           path: '/vs-ai',
           pageBuilder: (context, state) => _fadePage(state, const GameScreen.vsAi()),
         ),
+        GoRoute(
+          path: '/settings',
+          pageBuilder: (context, state) => _fadePage(state, const SettingsScreen()),
+        ),
       ],
     );
+
+    final baseTextTheme = GoogleFonts.nunitoTextTheme();
 
     return MaterialApp.router(
       title: 'Penguin Balance',
@@ -48,6 +56,7 @@ class PenguinBalanceApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF33A1D9)),
         useMaterial3: true,
+        textTheme: baseTextTheme,
       ),
     );
   }
