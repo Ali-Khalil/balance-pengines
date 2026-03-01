@@ -169,12 +169,21 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
                     ),
                   ),
                   if (_animatingPiece != null && _targetSlotId != null)
-                    _PlacementAnimationOverlay(
-                      piece: _animatingPiece!,
-                      slot: _AnimatedTargetSlot(gameState.slots.firstWhere((s) => s.id == _targetSlotId).position.dx),
-                      progress: Curves.easeInOut.transform(_placementController.value),
-                      boardTop: 130,
-                      trayTop: constraints.maxHeight * 0.62,
+                    Builder(
+                      builder: (context) {
+                        final targetSlot =
+                            gameState.slots.firstWhere((s) => s.id == _targetSlotId);
+                        return _PlacementAnimationOverlay(
+                          piece: _animatingPiece!,
+                          slot: _AnimatedTargetSlot(
+                            targetSlot.position.dx,
+                            targetSlot.position.dy,
+                          ),
+                          progress: Curves.easeInOut.transform(_placementController.value),
+                          boardTop: 120,
+                          trayTop: constraints.maxHeight * 0.62,
+                        );
+                      },
                     ),
                 ],
               );
@@ -187,8 +196,9 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
 }
 
 class _AnimatedTargetSlot {
-  const _AnimatedTargetSlot(this.dx);
+  const _AnimatedTargetSlot(this.dx, this.dy);
   final double dx;
+  final double dy;
 }
 
 class _PlacementAnimationOverlay extends StatelessWidget {
@@ -209,7 +219,8 @@ class _PlacementAnimationOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final start = Offset(MediaQuery.sizeOf(context).width * 0.5 - 48, trayTop);
-    final end = Offset(MediaQuery.sizeOf(context).width * slot.dx - 48, boardTop);
+    final endY = boardTop + ((slot.dy + 0.36) * 85);
+    final end = Offset(MediaQuery.sizeOf(context).width * slot.dx - 48, endY);
     final offset = Offset.lerp(start, end, progress) ?? end;
     final scale = 1 + (0.12 * (1 - (progress - 0.5).abs() * 2));
 

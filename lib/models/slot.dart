@@ -33,14 +33,41 @@ class BoardSlot {
   }
 }
 
+/// Toy-like board layout with 3 rows x 3 columns on each side.
+///
+/// Left distances are negative and right are positive.
 List<BoardSlot> buildDefaultSlots() {
-  const y = 0.0;
-  return const [
-    BoardSlot(id: 'L3', distance: -3, position: Offset(0.10, y)),
-    BoardSlot(id: 'L2', distance: -2, position: Offset(0.24, y)),
-    BoardSlot(id: 'L1', distance: -1, position: Offset(0.38, y)),
-    BoardSlot(id: 'R1', distance: 1, position: Offset(0.62, y)),
-    BoardSlot(id: 'R2', distance: 2, position: Offset(0.76, y)),
-    BoardSlot(id: 'R3', distance: 3, position: Offset(0.90, y)),
-  ];
+  const rowYs = [-0.28, 0.0, 0.28];
+  const leftXs = [0.08, 0.18, 0.28];
+  const rightXs = [0.72, 0.82, 0.92];
+  const leftDistances = [-3, -2, -1];
+  const rightDistances = [1, 2, 3];
+
+  final slots = <BoardSlot>[];
+
+  for (var row = 0; row < rowYs.length; row++) {
+    for (var col = 0; col < 3; col++) {
+      slots.add(
+        BoardSlot(
+          id: 'L${row + 1}${col + 1}',
+          distance: leftDistances[col],
+          position: Offset(leftXs[col], rowYs[row]),
+        ),
+      );
+    }
+  }
+
+  for (var row = 0; row < rowYs.length; row++) {
+    for (var col = 0; col < 3; col++) {
+      slots.add(
+        BoardSlot(
+          id: 'R${row + 1}${col + 1}',
+          distance: rightDistances[col],
+          position: Offset(rightXs[col], rowYs[row]),
+        ),
+      );
+    }
+  }
+
+  return slots;
 }

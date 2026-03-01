@@ -5,6 +5,18 @@ import 'package:penguin_balance/models/piece.dart';
 import 'package:penguin_balance/models/slot.dart';
 
 void main() {
+
+  test('buildDefaultSlots creates toy-like 3x3 slots on each side', () {
+    final slots = buildDefaultSlots();
+    expect(slots.length, 18);
+
+    final left = slots.where((slot) => slot.distance < 0).toList();
+    final right = slots.where((slot) => slot.distance > 0).toList();
+
+    expect(left.length, 9);
+    expect(right.length, 9);
+  });
+
   group('BalanceLogic', () {
     test('computes integer torque and balance state', () {
       const logic = BalanceLogic(tolerance: 1);

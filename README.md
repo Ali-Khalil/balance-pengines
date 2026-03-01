@@ -6,6 +6,7 @@ Deterministic Flutter puzzle game where players place weighted penguin pieces on
 
 - Integer-only torque math (`Σ weight × distance`)
 - Solo level mode with predefined levels
+- Toy-like board with 3x3 slots per side (9 left + 9 right)
 - Deterministic AI mode (no randomness)
 - State-driven board tilt + wobble animation
 - Pseudo-3D board and piece styling
