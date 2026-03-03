@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../core/ai_engine.dart';
 import '../core/balance_logic.dart';
@@ -61,6 +62,14 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
     super.dispose();
   }
 
+  void _resetGame() {
+    if (widget.vsAi) {
+      gameState.startVsAi();
+    } else {
+      gameState.startSoloLevel(widget.level!);
+    }
+  }
+
   Future<void> _handleSlotTap(String slotId) async {
     final selected = gameState.selectedPiece;
     if (selected == null || _animatingPiece != null) return;
@@ -97,12 +106,33 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
           }
           _lastStatus = gameState.status;
         }
+
         return Scaffold(
           appBar: AppBar(
-            title: Text(widget.vsAi ? 'VS Deterministic AI' : 'Solo: ${widget.level!.name}'),
+            title: Row(
+              children: [
+                Icon(widget.vsAi ? Icons.smart_toy_rounded : Icons.extension_rounded),
+                const SizedBox(width: 8),
+                Text(widget.vsAi ? 'VS Deterministic AI' : 'Solo: ${widget.level!.name}'),
+              ],
+            ),
+            actions: [
+              IconButton(
+                tooltip: 'Restart',
+                onPressed: _resetGame,
+                icon: const Icon(Icons.restart_alt_rounded),
+              ),
+              IconButton(
+                tooltip: 'Home',
+                onPressed: () => context.go('/'),
+                icon: const Icon(Icons.home_rounded),
+              ),
+            ],
           ),
           body: LayoutBuilder(
             builder: (context, constraints) {
+              final isLandscape = constraints.maxWidth > constraints.maxHeight;
+
               return Stack(
                 children: [
                   Positioned.fill(
@@ -124,36 +154,91 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
                   ),
                   SafeArea(
                     child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        children: [
-                          _StatusHeader(gameState: gameState),
-                          const SizedBox(height: 14),
-                          BoardWidget(
-                            slots: gameState.slots,
-                            tiltDegrees: gameState.tiltDegrees,
-                            onSlotTap: _handleSlotTap,
-                          ),
-                          const SizedBox(height: 12),
-                          _Tray(
-                            pieces: gameState.availablePieces,
-                            selectedPiece: gameState.selectedPiece,
-                            onTapPiece: gameState.selectPiece,
-                          ),
-                          const Spacer(),
-                          if (gameState.status != GameStatus.playing)
-                            _ResultBanner(
-                              status: gameState.status,
-                              onPlayAgain: () {
-                                if (widget.vsAi) {
-                                  gameState.startVsAi();
-                                } else {
-                                  gameState.startSoloLevel(widget.level!);
-                                }
-                              },
+                      padding: const EdgeInsets.all(14),
+                      child: isLandscape
+                          ? Row(
+                              children: [
+                                Expanded(
+                                  flex: 8,
+                                  child: Column(
+                                    children: [
+                                      _StatusHeader(gameState: gameState),
+                                      const SizedBox(height: 10),
+                                      Expanded(
+                                        child: Center(
+                                          child: BoardWidget(
+                                            slots: gameState.slots,
+                                            tiltDegrees: gameState.tiltDegrees,
+                                            onSlotTap: _handleSlotTap,
+                                          ),
+                                        ),
+                                      ),
+                                      if (gameState.status != GameStatus.playing)
+                                        _ResultBanner(
+                                          status: gameState.status,
+                                          onPlayAgain: _resetGame,
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  flex: 5,
+                                  child: Column(
+                                    children: [
+                                      Container(
+                                        width: double.infinity,
+                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withValues(alpha: 0.86),
+                                          borderRadius: BorderRadius.circular(14),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            const Icon(Icons.backpack_rounded),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              'Piece Tray',
+                                              style: Theme.of(context).textTheme.titleMedium,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Expanded(
+                                        child: SingleChildScrollView(
+                                          child: _Tray(
+                                            pieces: gameState.availablePieces,
+                                            selectedPiece: gameState.selectedPiece,
+                                            onTapPiece: gameState.selectPiece,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            )
+                          : Column(
+                              children: [
+                                _StatusHeader(gameState: gameState),
+                                const SizedBox(height: 12),
+                                BoardWidget(
+                                  slots: gameState.slots,
+                                  tiltDegrees: gameState.tiltDegrees,
+                                  onSlotTap: _handleSlotTap,
+                                ),
+                                const SizedBox(height: 12),
+                                _Tray(
+                                  pieces: gameState.availablePieces,
+                                  selectedPiece: gameState.selectedPiece,
+                                  onTapPiece: gameState.selectPiece,
+                                ),
+                                const Spacer(),
+                                if (gameState.status != GameStatus.playing)
+                                  _ResultBanner(status: gameState.status, onPlayAgain: _resetGame),
+                              ],
                             ),
-                        ],
-                      ),
                     ),
                   ),
                   Align(
@@ -171,17 +256,13 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
                   if (_animatingPiece != null && _targetSlotId != null)
                     Builder(
                       builder: (context) {
-                        final targetSlot =
-                            gameState.slots.firstWhere((s) => s.id == _targetSlotId);
+                        final targetSlot = gameState.slots.firstWhere((s) => s.id == _targetSlotId);
                         return _PlacementAnimationOverlay(
                           piece: _animatingPiece!,
-                          slot: _AnimatedTargetSlot(
-                            targetSlot.position.dx,
-                            targetSlot.position.dy,
-                          ),
+                          slot: _AnimatedTargetSlot(targetSlot.position.dx, targetSlot.position.dy),
                           progress: Curves.easeInOut.transform(_placementController.value),
-                          boardTop: 120,
-                          trayTop: constraints.maxHeight * 0.62,
+                          boardTop: 115,
+                          trayTop: constraints.maxHeight * 0.75,
                         );
                       },
                     ),
@@ -218,7 +299,7 @@ class _PlacementAnimationOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final start = Offset(MediaQuery.sizeOf(context).width * 0.5 - 48, trayTop);
+    final start = Offset(MediaQuery.sizeOf(context).width * 0.78 - 48, trayTop);
     final endY = boardTop + ((slot.dy + 0.36) * 85);
     final end = Offset(MediaQuery.sizeOf(context).width * slot.dx - 48, endY);
     final offset = Offset.lerp(start, end, progress) ?? end;
@@ -262,18 +343,39 @@ class _StatusHeader extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text('Torque: ${gameState.torque}', style: Theme.of(context).textTheme.titleMedium),
+          Row(
+            children: [
+              const Icon(Icons.speed_rounded, size: 18),
+              const SizedBox(width: 6),
+              Text('Torque: ${gameState.torque}', style: Theme.of(context).textTheme.titleMedium),
+            ],
+          ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
               color: balanced ? Colors.green.shade100 : Colors.orange.shade100,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Text(balanced ? 'Balanced' : 'Tilting'),
+            child: Row(
+              children: [
+                Icon(
+                  balanced ? Icons.balance_rounded : Icons.warning_amber_rounded,
+                  size: 16,
+                ),
+                const SizedBox(width: 4),
+                Text(balanced ? 'Balanced' : 'Tilting'),
+              ],
+            ),
           ),
-          Text(
-            gameState.mode == GameMode.vsAi ? 'Turn: ${gameState.turn.name.toUpperCase()}' : 'Solo',
-            style: Theme.of(context).textTheme.labelLarge,
+          Row(
+            children: [
+              const Icon(Icons.person_rounded, size: 18),
+              const SizedBox(width: 4),
+              Text(
+                gameState.mode == GameMode.vsAi ? 'Turn: ${gameState.turn.name.toUpperCase()}' : 'Solo',
+                style: Theme.of(context).textTheme.labelLarge,
+              ),
+            ],
           ),
         ],
       ),
@@ -330,19 +432,26 @@ class _ResultBanner extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(top: 10),
       decoration: BoxDecoration(
         color: won ? Colors.green.shade100 : Colors.red.shade100,
         borderRadius: BorderRadius.circular(16),
       ),
-      child: Column(
+      child: Row(
         children: [
-          Text(
-            won ? 'Great balancing! You win.' : 'Board tipped too far. You lose.',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+          Icon(won ? Icons.emoji_events_rounded : Icons.cancel_rounded),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              won ? 'Great balancing! You win.' : 'Board tipped too far. You lose.',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
           ),
-          const SizedBox(height: 8),
-          FilledButton(onPressed: onPlayAgain, child: const Text('Play Again')),
+          FilledButton.icon(
+            onPressed: onPlayAgain,
+            icon: const Icon(Icons.refresh_rounded),
+            label: const Text('Play Again'),
+          ),
         ],
       ),
     );

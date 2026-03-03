@@ -50,6 +50,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _settingCard(
               child: SwitchListTile.adaptive(
                 value: animationsEnabled,
+                secondary: const Icon(Icons.animation_rounded),
                 title: const Text('Animations'),
                 subtitle: const Text('Enable board wobble and placement motion.'),
                 onChanged: (value) => setState(() { animationsEnabled = value; _persistSettings(); }),
@@ -62,6 +63,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _settingCard(
               child: SwitchListTile.adaptive(
                 value: soundEnabled,
+                secondary: const Icon(Icons.music_note_rounded),
                 title: const Text('Sound Effects'),
                 subtitle: const Text('Reserved for future SFX integration.'),
                 onChanged: (value) => setState(() { soundEnabled = value; _persistSettings(); }),
@@ -74,6 +76,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _settingCard(
               child: SwitchListTile.adaptive(
                 value: highContrast,
+                secondary: const Icon(Icons.contrast_rounded),
                 title: const Text('High Contrast UI'),
                 subtitle: const Text('Improves readability in bright environments.'),
                 onChanged: (value) => setState(() { highContrast = value; _persistSettings(); }),
