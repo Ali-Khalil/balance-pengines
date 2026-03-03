@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../models/piece.dart';
 
+/// Piece token used in tray and on board.
+/// Set [compact] to true for the smaller on-board variant.
 class PieceWidget extends StatelessWidget {
   const PieceWidget({
     super.key,
@@ -24,13 +26,51 @@ class PieceWidget extends StatelessWidget {
       scale: selected ? 1.14 : 1.0,
       child: GestureDetector(
         onTap: onTap,
-        child: compact ? _CompactToken(piece: piece) : _TrayToken(piece: piece, selected: selected),
+        child: compact
+            ? _CompactToken(piece: piece)
+            : _TrayToken(piece: piece, selected: selected),
       ),
     );
   }
 }
 
-/// Large circular token shown in the piece tray (68×68).
+/// Draggable wrapper for tray pieces. Use in the bottom piece tray.
+class DraggablePieceWidget extends StatelessWidget {
+  const DraggablePieceWidget({
+    super.key,
+    required this.piece,
+    this.selected = false,
+    this.onTap,
+  });
+
+  final Piece piece;
+  final bool selected;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Draggable<Piece>(
+      data: piece,
+      feedback: Material(
+        color: Colors.transparent,
+        child: Opacity(
+          opacity: 0.88,
+          child: _TrayToken(piece: piece, selected: true),
+        ),
+      ),
+      childWhenDragging: Opacity(
+        opacity: 0.30,
+        child: _TrayToken(piece: piece, selected: false),
+      ),
+      child: GestureDetector(
+        onTap: onTap,
+        child: _TrayToken(piece: piece, selected: selected),
+      ),
+    );
+  }
+}
+
+/// Large circular token shown in the piece tray (56×56).
 class _TrayToken extends StatelessWidget {
   const _TrayToken({required this.piece, required this.selected});
 
@@ -44,8 +84,9 @@ class _TrayToken extends StatelessWidget {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       curve: Curves.easeOut,
-      width: 68,
-      height: 68,
+      width: 56,
+      height: 56,
+      clipBehavior: Clip.hardEdge,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: Colors.white,
@@ -57,39 +98,38 @@ class _TrayToken extends StatelessWidget {
             ? [
                 BoxShadow(
                   color: _orange.withValues(alpha: 0.55),
-                  blurRadius: 16,
+                  blurRadius: 14,
                   spreadRadius: 2,
-                ),
-                const BoxShadow(
-                  color: Colors.white,
-                  blurRadius: 4,
-                  spreadRadius: 1,
                 ),
               ]
             : [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.14),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
+                  blurRadius: 6,
+                  offset: const Offset(0, 3),
                 ),
               ],
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          const Text('🐧', style: TextStyle(fontSize: 22)),
           Text(
-            piece.type.label,
-            style: const TextStyle(fontSize: 28),
+            '×${piece.weight}',
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w900,
+              color: _orange,
+              height: 1.0,
+            ),
           ),
-          const SizedBox(height: 2),
-          _WeightDots(weight: piece.weight),
         ],
       ),
     );
   }
 }
 
-/// Small circular token shown on the board slots (40×40).
+/// Small circular token shown on the board slots (36×36).
 class _CompactToken extends StatelessWidget {
   const _CompactToken({required this.piece});
 
@@ -98,8 +138,9 @@ class _CompactToken extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 40,
-      height: 40,
+      width: 36,
+      height: 36,
+      clipBehavior: Clip.hardEdge,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: Colors.white,
@@ -112,37 +153,21 @@ class _CompactToken extends StatelessWidget {
           ),
         ],
       ),
-      child: Center(
-        child: Text(
-          piece.type.label,
-          style: const TextStyle(fontSize: 20),
-        ),
-      ),
-    );
-  }
-}
-
-/// Row of 1–3 filled orange dots representing piece weight.
-class _WeightDots extends StatelessWidget {
-  const _WeightDots({required this.weight});
-
-  final int weight;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: List.generate(weight, (_) {
-        return Container(
-          width: 7,
-          height: 7,
-          margin: const EdgeInsets.symmetric(horizontal: 1.5),
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            color: Color(0xFFFF6B35),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Text('🐧', style: TextStyle(fontSize: 14, height: 1.0)),
+          Text(
+            '${piece.weight}',
+            style: const TextStyle(
+              fontSize: 8,
+              fontWeight: FontWeight.w900,
+              color: Color(0xFFFF6B35),
+              height: 1.0,
+            ),
           ),
-        );
-      }),
+        ],
+      ),
     );
   }
 }

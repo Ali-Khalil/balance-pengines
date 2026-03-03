@@ -14,135 +14,132 @@ class LevelsScreen extends StatelessWidget {
     return Scaffold(
       body: ArcticBackground(
         child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            child: Row(
-              children: [
-                // Left: back + title + art
-                Expanded(
-                  flex: 4,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // Back button
-                      GestureDetector(
-                        onTap: () => context.go('/'),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.88),
-                            borderRadius: BorderRadius.circular(20),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.10),
-                                blurRadius: 6,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.arrow_back_rounded, size: 18, color: Color(0xFF0D3349)),
-                              SizedBox(width: 6),
-                              Text(
-                                'BACK',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 1.0,
-                                  color: Color(0xFF0D3349),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      // Title
-                      const Text(
-                        'SOLO',
-                        style: TextStyle(
-                          fontSize: 30,
-                          fontWeight: FontWeight.w900,
-                          color: Color(0xFF0D3349),
-                          height: 1.1,
-                          letterSpacing: 2.0,
-                        ),
-                      ),
-                      const Text(
-                        'LEVELS',
-                        style: TextStyle(
-                          fontSize: 30,
-                          fontWeight: FontWeight.w900,
-                          color: Color(0xFFFF6B35),
-                          height: 1.1,
-                          letterSpacing: 2.0,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      const Text(
-                        'Place penguins to\nbalance the board!',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Color(0xFF5B7FA6),
-                          fontWeight: FontWeight.w600,
-                          height: 1.4,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      // Decorative penguin group
-                      Row(
+          child: Stack(
+            children: [
+              // Main content
+              Padding(
+                padding: const EdgeInsets.only(left: 24, right: 24, top: 52, bottom: 12),
+                child: Row(
+                  children: [
+                    // Left: title + art
+                    Expanded(
+                      flex: 4,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: const [
-                          Text('🐧', style: TextStyle(fontSize: 38)),
-                          SizedBox(width: 6),
-                          Text('🐧', style: TextStyle(fontSize: 26)),
-                          SizedBox(width: 6),
-                          Text('🐧', style: TextStyle(fontSize: 32)),
+                          Text(
+                            'SOLO',
+                            style: TextStyle(
+                              fontSize: 30,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white,
+                              height: 1.1,
+                              letterSpacing: 2.0,
+                            ),
+                          ),
+                          Text(
+                            'LEVELS',
+                            style: TextStyle(
+                              fontSize: 30,
+                              fontWeight: FontWeight.w900,
+                              color: Color(0xFFFFE082),
+                              height: 1.1,
+                              letterSpacing: 2.0,
+                            ),
+                          ),
+                          SizedBox(height: 10),
+                          Text(
+                            'Place penguins to\nbalance the board!',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Color(0xFFB3E5FC),
+                              fontWeight: FontWeight.w600,
+                              height: 1.4,
+                            ),
+                          ),
+                          SizedBox(height: 20),
+                          // Decorative penguin group
+                          Row(
+                            children: [
+                              Text('🐧', style: TextStyle(fontSize: 38)),
+                              SizedBox(width: 6),
+                              Text('🐧', style: TextStyle(fontSize: 26)),
+                              SizedBox(width: 6),
+                              Text('🐧', style: TextStyle(fontSize: 32)),
+                            ],
+                          ),
                         ],
                       ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 20),
-                // Right: level cards
-                Expanded(
-                  flex: 6,
-                  child: Column(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFF6B35),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: const Text(
-                          'SELECT LEVEL',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 1.8,
-                            color: Colors.white,
+                    ),
+                    const SizedBox(width: 20),
+                    // Right: level cards
+                    Expanded(
+                      flex: 6,
+                      child: Column(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFF6B35),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: const Text(
+                              'SELECT LEVEL',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 1.8,
+                                color: Colors.white,
+                              ),
+                            ),
                           ),
-                        ),
+                          const SizedBox(height: 12),
+                          Expanded(
+                            child: ListView.separated(
+                              itemCount: levels.length,
+                              separatorBuilder: (_, __) => const SizedBox(height: 10),
+                              itemBuilder: (context, index) {
+                                final level = levels[index];
+                                return _LevelCard(level: level);
+                              },
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 12),
-                      Expanded(
-                        child: ListView.separated(
-                          itemCount: levels.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: 10),
-                          itemBuilder: (context, index) {
-                            final level = levels[index];
-                            return _LevelCard(level: level);
-                          },
+                    ),
+                  ],
+                ),
+              ),
+              // Back button — bold arrow at top-left
+              Positioned(
+                top: 8,
+                left: 12,
+                child: GestureDetector(
+                  onTap: () => context.go('/'),
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withValues(alpha: 0.92),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.18),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      size: 22,
+                      color: Color(0xFF0D3349),
+                    ),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

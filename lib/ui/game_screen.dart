@@ -26,14 +26,11 @@ class GameScreen extends StatefulWidget {
   State<GameScreen> createState() => _GameScreenState();
 }
 
-class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateMixin {
+class _GameScreenState extends State<GameScreen> {
   late final GameState gameState;
-  late final AnimationController _placementController;
   late final ConfettiController _confettiController;
 
   GameStatus _lastStatus = GameStatus.playing;
-  Piece? _animatingPiece;
-  String? _targetSlotId;
 
   @override
   void initState() {
@@ -41,10 +38,6 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
     gameState = GameState(
       balanceLogic: const BalanceLogic(tolerance: 1, maxTiltDegrees: 12),
       aiEngine: AiEngine(const BalanceLogic(tolerance: 1, maxTiltDegrees: 12)),
-    );
-    _placementController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 420),
     );
     _confettiController = ConfettiController(duration: const Duration(milliseconds: 1400));
 
@@ -57,7 +50,6 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
 
   @override
   void dispose() {
-    _placementController.dispose();
     _confettiController.dispose();
     gameState.dispose();
     super.dispose();
@@ -71,35 +63,35 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
     }
   }
 
-  Future<void> _handleSlotTap(String slotId) async {
-    final selected = gameState.selectedPiece;
-    if (selected == null || _animatingPiece != null) return;
+  /// Handle tap-to-place flow (tap piece in tray, then tap slot on board).
+  void _handleSlotTap(String slotId) {
+    if (gameState.selectedPiece == null) return;
     if (gameState.status != GameStatus.playing) return;
 
-    final slotIndex = gameState.slots.indexWhere((s) => s.id == slotId);
-    if (slotIndex < 0 || gameState.slots[slotIndex].isOccupied) return;
+    final slot = gameState.slots.firstWhere((s) => s.id == slotId, orElse: () => gameState.slots.first);
+    if (slot.isOccupied) return;
+    if (!_canPlayerDropOnSlot(slot.distance)) return;
 
-    setState(() {
-      _animatingPiece = selected;
-      _targetSlotId = slotId;
-    });
-
-    _placementController.forward(from: 0);
-    await Future<void>.delayed(const Duration(milliseconds: 400));
-
-    if (!mounted) return;
     gameState.placeSelectedPiece(slotId);
+  }
 
-    setState(() {
-      _animatingPiece = null;
-      _targetSlotId = null;
-    });
+  /// Handle drag-and-drop placement.
+  void _handlePieceDrop(String slotId, Piece piece) {
+    if (gameState.status != GameStatus.playing) return;
+    gameState.selectPiece(piece);
+    gameState.placeSelectedPiece(slotId);
+  }
+
+  /// Whether the player can drop on this slot (side restriction for VS AI).
+  bool _canPlayerDropOnSlot(int slotDistance) {
+    if (!widget.vsAi) return true; // solo mode: any slot
+    return slotDistance < 0; // VS AI: player uses left side only
   }
 
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: Listenable.merge([gameState, _placementController]),
+      animation: gameState,
       builder: (context, _) {
         if (gameState.status != _lastStatus) {
           if (gameState.status == GameStatus.won) {
@@ -111,124 +103,107 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
         return Scaffold(
           body: ArcticBackground(
             child: SafeArea(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  return Stack(
+              child: Stack(
+                children: [
+                  // Main layout: board fills screen, tray at bottom
+                  Column(
                     children: [
-                      // Main landscape layout
-                      Row(
-                        children: [
-                          // Left: board zone (60%)
-                          Expanded(
-                            flex: 6,
-                            child: Stack(
-                              children: [
-                                // Board centered vertically
-                                Center(
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                                    child: BoardWidget(
-                                      slots: gameState.slots,
-                                      tiltDegrees: gameState.tiltDegrees,
-                                      onSlotTap: _handleSlotTap,
-                                    ),
-                                  ),
+                      // Board zone — fills remaining space
+                      Expanded(
+                        child: Stack(
+                          children: [
+                            // Board centered
+                            Center(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                                child: BoardWidget(
+                                  slots: gameState.slots,
+                                  tiltDegrees: gameState.tiltDegrees,
+                                  onSlotTap: _handleSlotTap,
+                                  onPieceDrop: _handlePieceDrop,
+                                  canDropOnSlot: (slot) =>
+                                      !slot.isOccupied && _canPlayerDropOnSlot(slot.distance),
                                 ),
-                                // HUD: top-left icon buttons
-                                Positioned(
-                                  top: 8,
-                                  left: 10,
-                                  child: Row(
-                                    children: [
-                                      _HudButton(
-                                        icon: Icons.home_rounded,
-                                        onTap: () => context.go('/'),
-                                        tooltip: 'Home',
-                                      ),
-                                      const SizedBox(width: 8),
-                                      _HudButton(
-                                        icon: Icons.restart_alt_rounded,
-                                        onTap: _resetGame,
-                                        tooltip: 'Restart',
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                // HUD: top-center — level/mode name
-                                Positioned(
-                                  top: 12,
-                                  left: 0,
-                                  right: 0,
-                                  child: Center(
-                                    child: _ModeChip(
-                                      vsAi: widget.vsAi,
-                                      levelName: widget.level?.name,
-                                    ),
-                                  ),
-                                ),
-                                // HUD: top-right — VS AI turn indicator
-                                if (widget.vsAi)
-                                  Positioned(
-                                    top: 8,
-                                    right: 10,
-                                    child: _TurnIndicator(turn: gameState.turn),
-                                  ),
-                              ],
+                              ),
                             ),
-                          ),
-                          // Right: piece tray (40%)
-                          _PieceTray(
-                            pieces: gameState.availablePieces,
-                            selectedPiece: gameState.selectedPiece,
-                            onTapPiece: gameState.selectPiece,
-                            isAiTurn: widget.vsAi && gameState.turn == Turn.ai,
-                          ),
+                            // HUD: top-left icon buttons
+                            Positioned(
+                              top: 8,
+                              left: 12,
+                              child: Row(
+                                children: [
+                                  _HudButton(
+                                    icon: Icons.arrow_back_ios_new_rounded,
+                                    onTap: () => context.go('/'),
+                                    tooltip: 'Home',
+                                  ),
+                                  const SizedBox(width: 8),
+                                  _HudButton(
+                                    icon: Icons.restart_alt_rounded,
+                                    onTap: _resetGame,
+                                    tooltip: 'Restart',
+                                  ),
+                                ],
+                              ),
+                            ),
+                            // HUD: top-center mode chip
+                            Positioned(
+                              top: 12,
+                              left: 0,
+                              right: 0,
+                              child: Center(
+                                child: _ModeChip(
+                                  vsAi: widget.vsAi,
+                                  levelName: widget.level?.name,
+                                ),
+                              ),
+                            ),
+                            // HUD: top-right turn indicator (VS AI)
+                            if (widget.vsAi)
+                              Positioned(
+                                top: 8,
+                                right: 12,
+                                child: _TurnIndicator(turn: gameState.turn),
+                              ),
+                          ],
+                        ),
+                      ),
+                      // Bottom piece tray — horizontal scroller
+                      _BottomPieceTray(
+                        pieces: gameState.availablePieces,
+                        selectedPiece: gameState.selectedPiece,
+                        onTapPiece: gameState.selectPiece,
+                        isAiTurn: widget.vsAi && gameState.turn == Turn.ai,
+                      ),
+                    ],
+                  ),
+                  // Confetti overlay
+                  Align(
+                    alignment: Alignment.topCenter,
+                    child: IgnorePointer(
+                      child: ConfettiWidget(
+                        confettiController: _confettiController,
+                        blastDirectionality: BlastDirectionality.explosive,
+                        shouldLoop: false,
+                        numberOfParticles: 30,
+                        gravity: 0.22,
+                        colors: const [
+                          Color(0xFFFF6B35),
+                          Color(0xFF4CAF50),
+                          Color(0xFF2196F3),
+                          Color(0xFFFFC107),
+                          Color(0xFFE91E63),
                         ],
                       ),
-                      // Confetti overlay
-                      Align(
-                        alignment: Alignment.topCenter,
-                        child: IgnorePointer(
-                          child: ConfettiWidget(
-                            confettiController: _confettiController,
-                            blastDirectionality: BlastDirectionality.explosive,
-                            shouldLoop: false,
-                            numberOfParticles: 30,
-                            gravity: 0.22,
-                            colors: const [
-                              Color(0xFFFF6B35),
-                              Color(0xFF4CAF50),
-                              Color(0xFF2196F3),
-                              Color(0xFFFFC107),
-                              Color(0xFFE91E63),
-                            ],
-                          ),
-                        ),
-                      ),
-                      // Result overlay (win/lose)
-                      if (gameState.status != GameStatus.playing)
-                        _ResultOverlay(
-                          status: gameState.status,
-                          onPlayAgain: _resetGame,
-                        ),
-                      // Piece placement animation
-                      if (_animatingPiece != null && _targetSlotId != null)
-                        Builder(
-                          builder: (context) {
-                            final targetSlot = gameState.slots.firstWhere((s) => s.id == _targetSlotId);
-                            return _PlacementAnimationOverlay(
-                              piece: _animatingPiece!,
-                              slotDx: targetSlot.position.dx,
-                              slotDy: targetSlot.position.dy,
-                              progress: Curves.easeInOut.transform(_placementController.value),
-                              screenWidth: constraints.maxWidth,
-                              screenHeight: constraints.maxHeight,
-                            );
-                          },
-                        ),
-                    ],
-                  );
-                },
+                    ),
+                  ),
+                  // Result overlay (win/lose)
+                  if (gameState.status != GameStatus.playing)
+                    _ResultOverlay(
+                      status: gameState.status,
+                      onPlayAgain: _resetGame,
+                    ),
+                ],
               ),
             ),
           ),
@@ -266,7 +241,7 @@ class _HudButton extends StatelessWidget {
               ),
             ],
           ),
-          child: Icon(icon, size: 20, color: const Color(0xFFFF6B35)),
+          child: Icon(icon, size: 20, color: const Color(0xFF0D3349)),
         ),
       ),
     );
@@ -309,7 +284,7 @@ class _ModeChip extends StatelessWidget {
   }
 }
 
-/// VS AI turn indicator chip (top-right).
+/// VS AI turn indicator chip.
 class _TurnIndicator extends StatelessWidget {
   const _TurnIndicator({required this.turn});
 
@@ -358,9 +333,9 @@ class _TurnIndicator extends StatelessWidget {
   }
 }
 
-/// Right panel: piece tray with large circular tokens.
-class _PieceTray extends StatelessWidget {
-  const _PieceTray({
+/// Bottom horizontal piece tray (80px tall strip).
+class _BottomPieceTray extends StatelessWidget {
+  const _BottomPieceTray({
     required this.pieces,
     required this.selectedPiece,
     required this.onTapPiece,
@@ -374,88 +349,70 @@ class _PieceTray extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: MediaQuery.sizeOf(context).width * 0.36,
-      child: AnimatedOpacity(
-        duration: const Duration(milliseconds: 300),
-        opacity: isAiTurn ? 0.45 : 1.0,
-        child: Container(
-          margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.88),
-            borderRadius: const BorderRadius.all(Radius.circular(20)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.12),
-                blurRadius: 16,
-                offset: const Offset(-2, 0),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              const SizedBox(height: 12),
-              // Panel header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
-                  Text(
-                    '🐧  YOUR PIECES',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1.4,
-                      color: Color(0xFFFF6B35),
+    return AnimatedOpacity(
+      duration: const Duration(milliseconds: 300),
+      opacity: isAiTurn ? 0.45 : 1.0,
+      child: Container(
+        height: 80,
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.90),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.12),
+              blurRadius: 12,
+              offset: const Offset(0, -2),
+            ),
+          ],
+        ),
+        child: isAiTurn
+            ? const Center(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('🤖', style: TextStyle(fontSize: 24)),
+                    SizedBox(width: 10),
+                    Text(
+                      'AI THINKING...',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF5B7FA6),
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            : Row(
+                children: [
+                  // Label
+                  const Padding(
+                    padding: EdgeInsets.only(left: 16, right: 8),
+                    child: Text(
+                      '🐧',
+                      style: TextStyle(fontSize: 24),
+                    ),
+                  ),
+                  // Pieces — horizontal scroll
+                  Expanded(
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                      itemCount: pieces.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 10),
+                      itemBuilder: (context, index) {
+                        final piece = pieces[index];
+                        return DraggablePieceWidget(
+                          piece: piece,
+                          selected: selectedPiece?.id == piece.id,
+                          onTap: () => onTapPiece(piece),
+                        );
+                      },
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 6),
-              const Divider(height: 1, indent: 16, endIndent: 16, color: Color(0xFFFFDDCC)),
-              const SizedBox(height: 8),
-              // Piece tokens
-              Expanded(
-                child: isAiTurn
-                    ? Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Text('🤖', style: TextStyle(fontSize: 32)),
-                            const SizedBox(height: 8),
-                            Text(
-                              'AI THINKING...',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.grey.shade600,
-                                letterSpacing: 0.8,
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
-                    : SingleChildScrollView(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: Column(
-                          children: pieces
-                              .map(
-                                (piece) => Padding(
-                                  padding: const EdgeInsets.only(bottom: 10),
-                                  child: PieceWidget(
-                                    piece: piece,
-                                    selected: selectedPiece?.id == piece.id,
-                                    onTap: () => onTapPiece(piece),
-                                  ),
-                                ),
-                              )
-                              .toList(growable: false),
-                        ),
-                      ),
-              ),
-              const SizedBox(height: 8),
-            ],
-          ),
-        ),
       ),
     );
   }
@@ -536,54 +493,6 @@ class _ResultOverlay extends StatelessWidget {
               ),
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Flying piece animation overlay from tray to board slot.
-class _PlacementAnimationOverlay extends StatelessWidget {
-  const _PlacementAnimationOverlay({
-    required this.piece,
-    required this.slotDx,
-    required this.slotDy,
-    required this.progress,
-    required this.screenWidth,
-    required this.screenHeight,
-  });
-
-  final Piece piece;
-  final double slotDx;
-  final double slotDy;
-  final double progress;
-  final double screenWidth;
-  final double screenHeight;
-
-  @override
-  Widget build(BuildContext context) {
-    // Tray is on the right ~36% of screen width — piece starts from tray center
-    final trayStartX = screenWidth * 0.68;
-    final trayStartY = screenHeight * 0.5;
-
-    // Board occupies left ~64% of screen — scale slot position to board area
-    final boardAreaWidth = screenWidth * 0.60;
-    final boardLeft = boardAreaWidth * slotDx - 34;
-    final boardTop = screenHeight * 0.5 + (slotDy * screenHeight * 0.28);
-
-    final start = Offset(trayStartX, trayStartY);
-    final end = Offset(boardLeft, boardTop);
-    final offset = Offset.lerp(start, end, progress) ?? end;
-    final scale = 1 + (0.15 * (1 - (progress - 0.5).abs() * 2));
-
-    return Positioned(
-      left: offset.dx,
-      top: offset.dy,
-      child: Transform.scale(
-        scale: scale,
-        child: Opacity(
-          opacity: (1 - (progress - 1).abs()).clamp(0.2, 1.0),
-          child: PieceWidget(piece: piece),
         ),
       ),
     );

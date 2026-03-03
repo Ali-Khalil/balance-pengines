@@ -13,10 +13,10 @@ class HomeScreen extends StatelessWidget {
       body: ArcticBackground(
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             child: Row(
               children: [
-                // Left column: title, buttons, stats
+                // LEFT column: title + penguin scene
                 Expanded(
                   flex: 5,
                   child: Column(
@@ -36,9 +36,9 @@ class HomeScreen extends StatelessWidget {
                                 Text(
                                   'PENGUIN',
                                   style: TextStyle(
-                                    fontSize: 26,
+                                    fontSize: 28,
                                     fontWeight: FontWeight.w900,
-                                    color: Color(0xFF0D3349),
+                                    color: Colors.white,
                                     height: 1.1,
                                     letterSpacing: 1.5,
                                   ),
@@ -46,9 +46,9 @@ class HomeScreen extends StatelessWidget {
                                 Text(
                                   'BALANCE',
                                   style: TextStyle(
-                                    fontSize: 26,
+                                    fontSize: 28,
                                     fontWeight: FontWeight.w900,
-                                    color: Color(0xFFFF6B35),
+                                    color: Color(0xFFFFE082),
                                     height: 1.1,
                                     letterSpacing: 1.5,
                                   ),
@@ -58,17 +58,28 @@ class HomeScreen extends StatelessWidget {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 8),
                       const Text(
                         'Balance your flock!',
                         style: TextStyle(
                           fontSize: 13,
-                          color: Color(0xFF5B7FA6),
+                          color: Color(0xFFB3E5FC),
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      const SizedBox(height: 20),
-                      // Game buttons
+                      const SizedBox(height: 16),
+                      // Decorative penguin scene
+                      _PenguinScene(),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 20),
+                // RIGHT column: buttons + stats
+                Expanded(
+                  flex: 5,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
                       _GameButton(
                         emoji: '🎯',
                         label: 'SOLO LEVELS',
@@ -101,20 +112,20 @@ class HomeScreen extends StatelessWidget {
                           return Container(
                             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.80),
+                              color: Colors.white.withValues(alpha: 0.25),
                               borderRadius: BorderRadius.circular(14),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(Icons.star_rounded, size: 16, color: Color(0xFFFFC107)),
+                                const Icon(Icons.star_rounded, size: 16, color: Color(0xFFFFE082)),
                                 const SizedBox(width: 6),
                                 Text(
                                   'Played $played  •  Wins $wins',
                                   style: const TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w700,
-                                    color: Color(0xFF0D3349),
+                                    color: Colors.white,
                                   ),
                                 ),
                               ],
@@ -124,12 +135,6 @@ class HomeScreen extends StatelessWidget {
                       ),
                     ],
                   ),
-                ),
-                const SizedBox(width: 20),
-                // Right column: decorative penguin scene
-                Expanded(
-                  flex: 5,
-                  child: _PenguinScene(),
                 ),
               ],
             ),
@@ -161,24 +166,23 @@ class _GameButton extends StatelessWidget {
       width: double.infinity,
       child: GestureDetector(
         onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 120),
-          padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 20),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
           decoration: BoxDecoration(
             color: filled
                 ? const Color(0xFFFF6B35)
                 : subtle
-                    ? Colors.white.withValues(alpha: 0.60)
-                    : Colors.white.withValues(alpha: 0.88),
+                    ? Colors.white.withValues(alpha: 0.18)
+                    : Colors.white.withValues(alpha: 0.25),
             borderRadius: BorderRadius.circular(30),
-            border: Border.all(
-              color: filled
-                  ? const Color(0xFFE55520)
-                  : subtle
-                      ? Colors.white.withValues(alpha: 0.50)
-                      : const Color(0xFFFF6B35).withValues(alpha: 0.60),
-              width: filled ? 0 : 1.5,
-            ),
+            border: filled
+                ? null
+                : Border.all(
+                    color: subtle
+                        ? Colors.white.withValues(alpha: 0.30)
+                        : Colors.white.withValues(alpha: 0.50),
+                    width: 1.5,
+                  ),
             boxShadow: filled
                 ? [
                     const BoxShadow(
@@ -187,13 +191,7 @@ class _GameButton extends StatelessWidget {
                       offset: Offset(0, 5),
                     ),
                   ]
-                : [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.08),
-                      blurRadius: 8,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
+                : null,
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -206,11 +204,7 @@ class _GameButton extends StatelessWidget {
                   fontSize: 14,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 1.2,
-                  color: filled
-                      ? Colors.white
-                      : subtle
-                          ? const Color(0xFF5B7FA6)
-                          : const Color(0xFF0D3349),
+                  color: filled ? Colors.white : Colors.white.withValues(alpha: 0.95),
                 ),
               ),
             ],
@@ -221,7 +215,7 @@ class _GameButton extends StatelessWidget {
   }
 }
 
-/// Decorative right panel with a penguin balance scene.
+/// Decorative penguin group with mini seesaw.
 class _PenguinScene extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -229,7 +223,6 @@ class _PenguinScene extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Stacked penguin group
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.end,
@@ -244,7 +237,7 @@ class _PenguinScene extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 10),
-          // Mini seesaw illustration
+          // Mini seesaw
           Container(
             width: 160,
             height: 10,
@@ -262,34 +255,16 @@ class _PenguinScene extends StatelessWidget {
               ],
             ),
           ),
-          // Fulcrum stand (mini)
           Container(
             width: 14,
             height: 20,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
                 colors: [Color(0xFF607D8B), Color(0xFF37474F)],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
               ),
-              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(4)),
-            ),
-          ),
-          const SizedBox(height: 14),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.78),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: const Text(
-              'Place penguins — keep it balanced!',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF0D3349),
-              ),
-              textAlign: TextAlign.center,
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(4)),
             ),
           ),
         ],
