@@ -9,6 +9,7 @@ import '../core/balance_logic.dart';
 import '../core/game_state.dart';
 import '../models/level.dart';
 import '../models/piece.dart';
+import 'arctic_background.dart';
 import 'board_widget.dart';
 import 'piece_widget.dart';
 
@@ -45,7 +46,7 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
       vsync: this,
       duration: const Duration(milliseconds: 420),
     );
-    _confettiController = ConfettiController(duration: const Duration(milliseconds: 900));
+    _confettiController = ConfettiController(duration: const Duration(milliseconds: 1400));
 
     if (widget.vsAi) {
       gameState.startVsAi();
@@ -108,167 +109,128 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
         }
 
         return Scaffold(
-          appBar: AppBar(
-            title: Row(
-              children: [
-                Icon(widget.vsAi ? Icons.smart_toy_rounded : Icons.extension_rounded),
-                const SizedBox(width: 8),
-                Text(widget.vsAi ? 'VS Deterministic AI' : 'Solo: ${widget.level!.name}'),
-              ],
-            ),
-            actions: [
-              IconButton(
-                tooltip: 'Restart',
-                onPressed: _resetGame,
-                icon: const Icon(Icons.restart_alt_rounded),
-              ),
-              IconButton(
-                tooltip: 'Home',
-                onPressed: () => context.go('/'),
-                icon: const Icon(Icons.home_rounded),
-              ),
-            ],
-          ),
-          body: LayoutBuilder(
-            builder: (context, constraints) {
-              final isLandscape = constraints.maxWidth > constraints.maxHeight;
-
-              return Stack(
-                children: [
-                  Positioned.fill(
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [Colors.lightBlue.shade100, Colors.white],
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                        ),
-                      ),
-                    ),
-                  ),
-                  Positioned.fill(
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 1.2, sigmaY: 1.2),
-                      child: const SizedBox.expand(),
-                    ),
-                  ),
-                  SafeArea(
-                    child: Padding(
-                      padding: const EdgeInsets.all(14),
-                      child: isLandscape
-                          ? Row(
+          body: ArcticBackground(
+            child: SafeArea(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return Stack(
+                    children: [
+                      // Main landscape layout
+                      Row(
+                        children: [
+                          // Left: board zone (60%)
+                          Expanded(
+                            flex: 6,
+                            child: Stack(
                               children: [
-                                Expanded(
-                                  flex: 8,
-                                  child: Column(
-                                    children: [
-                                      _StatusHeader(gameState: gameState),
-                                      const SizedBox(height: 10),
-                                      Expanded(
-                                        child: Center(
-                                          child: BoardWidget(
-                                            slots: gameState.slots,
-                                            tiltDegrees: gameState.tiltDegrees,
-                                            onSlotTap: _handleSlotTap,
-                                          ),
-                                        ),
-                                      ),
-                                      if (gameState.status != GameStatus.playing)
-                                        _ResultBanner(
-                                          status: gameState.status,
-                                          onPlayAgain: _resetGame,
-                                        ),
-                                    ],
+                                // Board centered vertically
+                                Center(
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                                    child: BoardWidget(
+                                      slots: gameState.slots,
+                                      tiltDegrees: gameState.tiltDegrees,
+                                      onSlotTap: _handleSlotTap,
+                                    ),
                                   ),
                                 ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  flex: 5,
-                                  child: Column(
+                                // HUD: top-left icon buttons
+                                Positioned(
+                                  top: 8,
+                                  left: 10,
+                                  child: Row(
                                     children: [
-                                      Container(
-                                        width: double.infinity,
-                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withValues(alpha: 0.86),
-                                          borderRadius: BorderRadius.circular(14),
-                                        ),
-                                        child: Row(
-                                          children: [
-                                            const Icon(Icons.backpack_rounded),
-                                            const SizedBox(width: 8),
-                                            Text(
-                                              'Piece Tray',
-                                              style: Theme.of(context).textTheme.titleMedium,
-                                            ),
-                                          ],
-                                        ),
+                                      _HudButton(
+                                        icon: Icons.home_rounded,
+                                        onTap: () => context.go('/'),
+                                        tooltip: 'Home',
                                       ),
-                                      const SizedBox(height: 8),
-                                      Expanded(
-                                        child: SingleChildScrollView(
-                                          child: _Tray(
-                                            pieces: gameState.availablePieces,
-                                            selectedPiece: gameState.selectedPiece,
-                                            onTapPiece: gameState.selectPiece,
-                                          ),
-                                        ),
+                                      const SizedBox(width: 8),
+                                      _HudButton(
+                                        icon: Icons.restart_alt_rounded,
+                                        onTap: _resetGame,
+                                        tooltip: 'Restart',
                                       ),
                                     ],
                                   ),
                                 ),
-                              ],
-                            )
-                          : Column(
-                              children: [
-                                _StatusHeader(gameState: gameState),
-                                const SizedBox(height: 12),
-                                BoardWidget(
-                                  slots: gameState.slots,
-                                  tiltDegrees: gameState.tiltDegrees,
-                                  onSlotTap: _handleSlotTap,
+                                // HUD: top-center — level/mode name
+                                Positioned(
+                                  top: 12,
+                                  left: 0,
+                                  right: 0,
+                                  child: Center(
+                                    child: _ModeChip(
+                                      vsAi: widget.vsAi,
+                                      levelName: widget.level?.name,
+                                    ),
+                                  ),
                                 ),
-                                const SizedBox(height: 12),
-                                _Tray(
-                                  pieces: gameState.availablePieces,
-                                  selectedPiece: gameState.selectedPiece,
-                                  onTapPiece: gameState.selectPiece,
-                                ),
-                                const Spacer(),
-                                if (gameState.status != GameStatus.playing)
-                                  _ResultBanner(status: gameState.status, onPlayAgain: _resetGame),
+                                // HUD: top-right — VS AI turn indicator
+                                if (widget.vsAi)
+                                  Positioned(
+                                    top: 8,
+                                    right: 10,
+                                    child: _TurnIndicator(turn: gameState.turn),
+                                  ),
                               ],
                             ),
-                    ),
-                  ),
-                  Align(
-                    alignment: Alignment.topCenter,
-                    child: IgnorePointer(
-                      child: ConfettiWidget(
-                        confettiController: _confettiController,
-                        blastDirectionality: BlastDirectionality.explosive,
-                        shouldLoop: false,
-                        numberOfParticles: 22,
-                        gravity: 0.25,
+                          ),
+                          // Right: piece tray (40%)
+                          _PieceTray(
+                            pieces: gameState.availablePieces,
+                            selectedPiece: gameState.selectedPiece,
+                            onTapPiece: gameState.selectPiece,
+                            isAiTurn: widget.vsAi && gameState.turn == Turn.ai,
+                          ),
+                        ],
                       ),
-                    ),
-                  ),
-                  if (_animatingPiece != null && _targetSlotId != null)
-                    Builder(
-                      builder: (context) {
-                        final targetSlot = gameState.slots.firstWhere((s) => s.id == _targetSlotId);
-                        return _PlacementAnimationOverlay(
-                          piece: _animatingPiece!,
-                          slot: _AnimatedTargetSlot(targetSlot.position.dx, targetSlot.position.dy),
-                          progress: Curves.easeInOut.transform(_placementController.value),
-                          boardTop: 115,
-                          trayTop: constraints.maxHeight * 0.75,
-                        );
-                      },
-                    ),
-                ],
-              );
-            },
+                      // Confetti overlay
+                      Align(
+                        alignment: Alignment.topCenter,
+                        child: IgnorePointer(
+                          child: ConfettiWidget(
+                            confettiController: _confettiController,
+                            blastDirectionality: BlastDirectionality.explosive,
+                            shouldLoop: false,
+                            numberOfParticles: 30,
+                            gravity: 0.22,
+                            colors: const [
+                              Color(0xFFFF6B35),
+                              Color(0xFF4CAF50),
+                              Color(0xFF2196F3),
+                              Color(0xFFFFC107),
+                              Color(0xFFE91E63),
+                            ],
+                          ),
+                        ),
+                      ),
+                      // Result overlay (win/lose)
+                      if (gameState.status != GameStatus.playing)
+                        _ResultOverlay(
+                          status: gameState.status,
+                          onPlayAgain: _resetGame,
+                        ),
+                      // Piece placement animation
+                      if (_animatingPiece != null && _targetSlotId != null)
+                        Builder(
+                          builder: (context) {
+                            final targetSlot = gameState.slots.firstWhere((s) => s.id == _targetSlotId);
+                            return _PlacementAnimationOverlay(
+                              piece: _animatingPiece!,
+                              slotDx: targetSlot.position.dx,
+                              slotDy: targetSlot.position.dy,
+                              progress: Curves.easeInOut.transform(_placementController.value),
+                              screenWidth: constraints.maxWidth,
+                              screenHeight: constraints.maxHeight,
+                            );
+                          },
+                        ),
+                    ],
+                  );
+                },
+              ),
+            ),
           ),
         );
       },
@@ -276,106 +238,119 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
   }
 }
 
-class _AnimatedTargetSlot {
-  const _AnimatedTargetSlot(this.dx, this.dy);
-  final double dx;
-  final double dy;
-}
+/// Small circular HUD icon button.
+class _HudButton extends StatelessWidget {
+  const _HudButton({required this.icon, required this.onTap, required this.tooltip});
 
-class _PlacementAnimationOverlay extends StatelessWidget {
-  const _PlacementAnimationOverlay({
-    required this.piece,
-    required this.slot,
-    required this.progress,
-    required this.boardTop,
-    required this.trayTop,
-  });
-
-  final Piece piece;
-  final double progress;
-  final double boardTop;
-  final double trayTop;
-  final _AnimatedTargetSlot slot;
+  final IconData icon;
+  final VoidCallback onTap;
+  final String tooltip;
 
   @override
   Widget build(BuildContext context) {
-    final start = Offset(MediaQuery.sizeOf(context).width * 0.78 - 48, trayTop);
-    final endY = boardTop + ((slot.dy + 0.36) * 85);
-    final end = Offset(MediaQuery.sizeOf(context).width * slot.dx - 48, endY);
-    final offset = Offset.lerp(start, end, progress) ?? end;
-    final scale = 1 + (0.12 * (1 - (progress - 0.5).abs() * 2));
-
-    return Positioned(
-      left: offset.dx,
-      top: offset.dy,
-      child: Transform.scale(
-        scale: scale,
-        child: Opacity(
-          opacity: (1 - (progress - 1).abs()).clamp(0.25, 1),
-          child: PieceWidget(piece: piece),
+    return Tooltip(
+      message: tooltip,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.white.withValues(alpha: 0.92),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.18),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Icon(icon, size: 20, color: const Color(0xFFFF6B35)),
         ),
       ),
     );
   }
 }
 
-class _StatusHeader extends StatelessWidget {
-  const _StatusHeader({required this.gameState});
+/// Small chip showing game mode name.
+class _ModeChip extends StatelessWidget {
+  const _ModeChip({required this.vsAi, required this.levelName});
 
-  final GameState gameState;
+  final bool vsAi;
+  final String? levelName;
 
   @override
   Widget build(BuildContext context) {
-    final balanced = gameState.torque.abs() <= 1;
+    final label = vsAi ? '🤖  VS AI' : '🎯  ${levelName ?? "Solo"}';
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
-        color: Colors.white.withValues(alpha: 0.92),
+        color: Colors.white.withValues(alpha: 0.82),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
+            color: Colors.black.withValues(alpha: 0.12),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFF0D3349),
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+}
+
+/// VS AI turn indicator chip (top-right).
+class _TurnIndicator extends StatelessWidget {
+  const _TurnIndicator({required this.turn});
+
+  final Turn turn;
+
+  @override
+  Widget build(BuildContext context) {
+    final isPlayer = turn == Turn.player;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: isPlayer
+            ? const Color(0xFFFF6B35).withValues(alpha: 0.92)
+            : Colors.white.withValues(alpha: 0.82),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.15),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Row(
-            children: [
-              const Icon(Icons.speed_rounded, size: 18),
-              const SizedBox(width: 6),
-              Text('Torque: ${gameState.torque}', style: Theme.of(context).textTheme.titleMedium),
-            ],
+          Icon(
+            isPlayer ? Icons.person_rounded : Icons.smart_toy_rounded,
+            size: 16,
+            color: isPlayer ? Colors.white : const Color(0xFF0D3349),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: balanced ? Colors.green.shade100 : Colors.orange.shade100,
-              borderRadius: BorderRadius.circular(12),
+          const SizedBox(width: 6),
+          Text(
+            isPlayer ? 'YOUR TURN' : 'AI...',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.8,
+              color: isPlayer ? Colors.white : const Color(0xFF0D3349),
             ),
-            child: Row(
-              children: [
-                Icon(
-                  balanced ? Icons.balance_rounded : Icons.warning_amber_rounded,
-                  size: 16,
-                ),
-                const SizedBox(width: 4),
-                Text(balanced ? 'Balanced' : 'Tilting'),
-              ],
-            ),
-          ),
-          Row(
-            children: [
-              const Icon(Icons.person_rounded, size: 18),
-              const SizedBox(width: 4),
-              Text(
-                gameState.mode == GameMode.vsAi ? 'Turn: ${gameState.turn.name.toUpperCase()}' : 'Solo',
-                style: Theme.of(context).textTheme.labelLarge,
-              ),
-            ],
           ),
         ],
       ),
@@ -383,45 +358,112 @@ class _StatusHeader extends StatelessWidget {
   }
 }
 
-class _Tray extends StatelessWidget {
-  const _Tray({
+/// Right panel: piece tray with large circular tokens.
+class _PieceTray extends StatelessWidget {
+  const _PieceTray({
     required this.pieces,
     required this.selectedPiece,
     required this.onTapPiece,
+    required this.isAiTurn,
   });
 
   final List<Piece> pieces;
   final Piece? selectedPiece;
   final ValueChanged<Piece> onTapPiece;
+  final bool isAiTurn;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.9),
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Wrap(
-        spacing: 10,
-        runSpacing: 8,
-        children: pieces
-            .map(
-              (piece) => PieceWidget(
-                piece: piece,
-                selected: selectedPiece?.id == piece.id,
-                onTap: () => onTapPiece(piece),
+    return SizedBox(
+      width: MediaQuery.sizeOf(context).width * 0.36,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 300),
+        opacity: isAiTurn ? 0.45 : 1.0,
+        child: Container(
+          margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.88),
+            borderRadius: const BorderRadius.all(Radius.circular(20)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.12),
+                blurRadius: 16,
+                offset: const Offset(-2, 0),
               ),
-            )
-            .toList(growable: false),
+            ],
+          ),
+          child: Column(
+            children: [
+              const SizedBox(height: 12),
+              // Panel header
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: const [
+                  Text(
+                    '🐧  YOUR PIECES',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.4,
+                      color: Color(0xFFFF6B35),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              const Divider(height: 1, indent: 16, endIndent: 16, color: Color(0xFFFFDDCC)),
+              const SizedBox(height: 8),
+              // Piece tokens
+              Expanded(
+                child: isAiTurn
+                    ? Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text('🤖', style: TextStyle(fontSize: 32)),
+                            const SizedBox(height: 8),
+                            Text(
+                              'AI THINKING...',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.grey.shade600,
+                                letterSpacing: 0.8,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : SingleChildScrollView(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: Column(
+                          children: pieces
+                              .map(
+                                (piece) => Padding(
+                                  padding: const EdgeInsets.only(bottom: 10),
+                                  child: PieceWidget(
+                                    piece: piece,
+                                    selected: selectedPiece?.id == piece.id,
+                                    onTap: () => onTapPiece(piece),
+                                  ),
+                                ),
+                              )
+                              .toList(growable: false),
+                        ),
+                      ),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
       ),
     );
   }
 }
 
-class _ResultBanner extends StatelessWidget {
-  const _ResultBanner({required this.status, required this.onPlayAgain});
+/// Full-screen win/lose overlay with blur.
+class _ResultOverlay extends StatelessWidget {
+  const _ResultOverlay({required this.status, required this.onPlayAgain});
 
   final GameStatus status;
   final VoidCallback onPlayAgain;
@@ -429,30 +471,120 @@ class _ResultBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final won = status == GameStatus.won;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      margin: const EdgeInsets.only(top: 10),
-      decoration: BoxDecoration(
-        color: won ? Colors.green.shade100 : Colors.red.shade100,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: [
-          Icon(won ? Icons.emoji_events_rounded : Icons.cancel_rounded),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              won ? 'Great balancing! You win.' : 'Board tipped too far. You lose.',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+
+    return Positioned.fill(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+        child: ColoredBox(
+          color: (won ? const Color(0xFF4CAF50) : const Color(0xFFE53935)).withValues(alpha: 0.35),
+          child: Center(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 28),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.95),
+                borderRadius: BorderRadius.circular(28),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.18),
+                    blurRadius: 30,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    won ? '🏆' : '😬',
+                    style: const TextStyle(fontSize: 64),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    won ? 'BALANCED!' : 'TIPPED OVER!',
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w900,
+                      color: won ? const Color(0xFF2E7D32) : const Color(0xFFC62828),
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    won ? 'Penguins are safe! 🐧' : 'Try again!',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Color(0xFF5B7FA6),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  FilledButton.icon(
+                    onPressed: onPlayAgain,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFFFF6B35),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                    ),
+                    icon: const Icon(Icons.refresh_rounded),
+                    label: const Text(
+                      'PLAY AGAIN',
+                      style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 0.8),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-          FilledButton.icon(
-            onPressed: onPlayAgain,
-            icon: const Icon(Icons.refresh_rounded),
-            label: const Text('Play Again'),
-          ),
-        ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Flying piece animation overlay from tray to board slot.
+class _PlacementAnimationOverlay extends StatelessWidget {
+  const _PlacementAnimationOverlay({
+    required this.piece,
+    required this.slotDx,
+    required this.slotDy,
+    required this.progress,
+    required this.screenWidth,
+    required this.screenHeight,
+  });
+
+  final Piece piece;
+  final double slotDx;
+  final double slotDy;
+  final double progress;
+  final double screenWidth;
+  final double screenHeight;
+
+  @override
+  Widget build(BuildContext context) {
+    // Tray is on the right ~36% of screen width — piece starts from tray center
+    final trayStartX = screenWidth * 0.68;
+    final trayStartY = screenHeight * 0.5;
+
+    // Board occupies left ~64% of screen — scale slot position to board area
+    final boardAreaWidth = screenWidth * 0.60;
+    final boardLeft = boardAreaWidth * slotDx - 34;
+    final boardTop = screenHeight * 0.5 + (slotDy * screenHeight * 0.28);
+
+    final start = Offset(trayStartX, trayStartY);
+    final end = Offset(boardLeft, boardTop);
+    final offset = Offset.lerp(start, end, progress) ?? end;
+    final scale = 1 + (0.15 * (1 - (progress - 0.5).abs() * 2));
+
+    return Positioned(
+      left: offset.dx,
+      top: offset.dy,
+      child: Transform.scale(
+        scale: scale,
+        child: Opacity(
+          opacity: (1 - (progress - 1).abs()).clamp(0.2, 1.0),
+          child: PieceWidget(piece: piece),
+        ),
       ),
     );
   }
