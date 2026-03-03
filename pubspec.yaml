@@ -1,0 +1,25 @@
+name: penguin_balance
+version: 1.0.0+1
+description: Deterministic teeterboard puzzle game with solo levels and deterministic AI.
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  go_router: ^14.2.7
+  flutter_animate: ^4.5.2
+  google_fonts: ^6.3.0
+  confetti: ^0.8.0
+  shared_preferences: ^2.5.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
