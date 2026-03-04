@@ -2,73 +2,130 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/app_storage.dart';
-import '../models/level.dart';
+import 'arctic_background.dart';
 
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key, required this.levels});
-
-  final List<Level> levels;
+  const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.blue.shade200, Colors.cyan.shade50],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
+      body: ArcticBackground(
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             child: Row(
               children: [
+                // LEFT column: title + penguin scene
                 Expanded(
                   flex: 5,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
+                      // Logo + title
                       Row(
-                        children: [
-                          const Icon(Icons.toys_rounded, size: 30, color: Color(0xFF113858)),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Penguin Balance',
-                            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                                  fontWeight: FontWeight.w900,
-                                  color: const Color(0xFF113858),
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: const [
+                          Text('🐧', style: TextStyle(fontSize: 56)),
+                          SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'PENGUIN',
+                                  style: TextStyle(
+                                    fontSize: 28,
+                                    fontWeight: FontWeight.w900,
+                                    color: Colors.white,
+                                    height: 1.1,
+                                    letterSpacing: 1.5,
+                                  ),
                                 ),
+                                Text(
+                                  'BALANCE',
+                                  style: TextStyle(
+                                    fontSize: 28,
+                                    fontWeight: FontWeight.w900,
+                                    color: Color(0xFFFFE082),
+                                    height: 1.1,
+                                    letterSpacing: 1.5,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 8),
-                      const Text('Deterministic puzzle strategy. Place wisely!'),
-                      const SizedBox(height: 14),
+                      const Text(
+                        'Balance your flock!',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFFB3E5FC),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      // Decorative penguin scene
+                      _PenguinScene(),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 20),
+                // RIGHT column: buttons + stats
+                Expanded(
+                  flex: 5,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _GameButton(
+                        emoji: '🎯',
+                        label: 'SOLO LEVELS',
+                        filled: true,
+                        onTap: () => context.push('/levels'),
+                      ),
+                      const SizedBox(height: 10),
+                      _GameButton(
+                        emoji: '🤖',
+                        label: 'VS AI',
+                        filled: false,
+                        onTap: () => context.push('/vs-ai'),
+                      ),
+                      const SizedBox(height: 10),
+                      _GameButton(
+                        emoji: '⚙️',
+                        label: 'SETTINGS',
+                        filled: false,
+                        subtle: true,
+                        onTap: () => context.push('/settings'),
+                      ),
+                      const SizedBox(height: 16),
+                      // Stats chip
                       FutureBuilder<GameStatsSnapshot>(
                         future: AppStorage.instance.loadStats(),
                         builder: (context, snapshot) {
                           final stats = snapshot.data;
-                          final levelsPlayed = stats?.levelsPlayed.length ?? 0;
+                          final played = stats?.levelsPlayed.length ?? 0;
                           final wins = stats?.wins ?? 0;
-                          final losses = stats?.losses ?? 0;
                           return Container(
-                            width: double.infinity,
-                            margin: const EdgeInsets.only(bottom: 12),
-                            padding: const EdgeInsets.all(12),
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.82),
+                              color: Colors.white.withValues(alpha: 0.25),
                               borderRadius: BorderRadius.circular(14),
                             ),
                             child: Row(
+                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(Icons.insights_rounded, color: Color(0xFF1C6EA4)),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    'Played: $levelsPlayed  • Wins: $wins  • Losses: $losses',
-                                    style: Theme.of(context).textTheme.bodyMedium,
+                                const Icon(Icons.star_rounded, size: 16, color: Color(0xFFFFE082)),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Played $played  •  Wins $wins',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
                                   ),
                                 ),
                               ],
@@ -76,53 +133,7 @@ class HomeScreen extends StatelessWidget {
                           );
                         },
                       ),
-                      _HomeButton(
-                        label: 'Solo Levels',
-                        icon: Icons.grid_view_rounded,
-                        onTap: () => context.push('/levels'),
-                      ),
-                      const SizedBox(height: 10),
-                      _HomeButton(
-                        label: 'VS AI',
-                        icon: Icons.smart_toy_rounded,
-                        onTap: () => context.push('/vs-ai'),
-                      ),
-                      const SizedBox(height: 10),
-                      _HomeButton(
-                        label: 'Settings',
-                        icon: Icons.settings_rounded,
-                        onTap: () => context.push('/settings'),
-                      ),
                     ],
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  flex: 6,
-                  child: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.75),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: ListView.separated(
-                      itemBuilder: (context, index) {
-                        final level = levels[index];
-                        return ListTile(
-                          leading: const CircleAvatar(
-                            backgroundColor: Color(0xFFE6F4FF),
-                            child: Icon(Icons.extension_rounded),
-                          ),
-                          tileColor: Colors.white.withValues(alpha: 0.9),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                          title: Text('Level ${level.id}: ${level.name}'),
-                          trailing: const Icon(Icons.play_circle_fill_rounded, size: 24),
-                          onTap: () => context.push('/solo/${level.id}'),
-                        );
-                      },
-                      separatorBuilder: (_, __) => const SizedBox(height: 8),
-                      itemCount: levels.length,
-                    ),
                   ),
                 ),
               ],
@@ -134,27 +145,129 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
-class _HomeButton extends StatelessWidget {
-  const _HomeButton({required this.label, required this.icon, required this.onTap});
+class _GameButton extends StatelessWidget {
+  const _GameButton({
+    required this.emoji,
+    required this.label,
+    required this.filled,
+    required this.onTap,
+    this.subtle = false,
+  });
 
+  final String emoji;
   final String label;
-  final IconData icon;
+  final bool filled;
+  final bool subtle;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       width: double.infinity,
-      child: FilledButton.icon(
-        style: FilledButton.styleFrom(
-          backgroundColor: const Color(0xFF1C6EA4),
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-          padding: const EdgeInsets.symmetric(vertical: 14),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+          decoration: BoxDecoration(
+            color: filled
+                ? const Color(0xFFFF6B35)
+                : subtle
+                    ? Colors.white.withValues(alpha: 0.18)
+                    : Colors.white.withValues(alpha: 0.25),
+            borderRadius: BorderRadius.circular(30),
+            border: filled
+                ? null
+                : Border.all(
+                    color: subtle
+                        ? Colors.white.withValues(alpha: 0.30)
+                        : Colors.white.withValues(alpha: 0.50),
+                    width: 1.5,
+                  ),
+            boxShadow: filled
+                ? [
+                    const BoxShadow(
+                      color: Color(0x55FF6B35),
+                      blurRadius: 14,
+                      offset: Offset(0, 5),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(emoji, style: const TextStyle(fontSize: 18)),
+              const SizedBox(width: 10),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.2,
+                  color: filled ? Colors.white : Colors.white.withValues(alpha: 0.95),
+                ),
+              ),
+            ],
+          ),
         ),
-        onPressed: onTap,
-        icon: Icon(icon),
-        label: Text(label),
+      ),
+    );
+  }
+}
+
+/// Decorative penguin group with mini seesaw.
+class _PenguinScene extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: const [
+              Text('🐧', style: TextStyle(fontSize: 28)),
+              SizedBox(width: 4),
+              Text('🐧', style: TextStyle(fontSize: 44)),
+              SizedBox(width: 4),
+              Text('🐧', style: TextStyle(fontSize: 36)),
+              SizedBox(width: 4),
+              Text('🐧', style: TextStyle(fontSize: 24)),
+            ],
+          ),
+          const SizedBox(height: 10),
+          // Mini seesaw
+          Container(
+            width: 160,
+            height: 10,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(6),
+              gradient: const LinearGradient(
+                colors: [Color(0xFF6D4C26), Color(0xFFC49A50), Color(0xFF6D4C26)],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.22),
+                  blurRadius: 6,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            width: 14,
+            height: 20,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF607D8B), Color(0xFF37474F)],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(4)),
+            ),
+          ),
+        ],
       ),
     );
   }

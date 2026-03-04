@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'models/level.dart';
 import 'ui/game_screen.dart';
 import 'ui/home_screen.dart';
+import 'ui/levels_screen.dart';
 import 'ui/settings_screen.dart';
 
 Future<void> main() async {
@@ -30,11 +31,11 @@ class PenguinBalanceApp extends StatelessWidget {
       routes: [
         GoRoute(
           path: '/',
-          pageBuilder: (context, state) => _fadePage(state, HomeScreen(levels: levels)),
+          pageBuilder: (context, state) => _fadePage(state, const HomeScreen()),
         ),
         GoRoute(
           path: '/levels',
-          pageBuilder: (context, state) => _fadePage(state, HomeScreen(levels: levels)),
+          pageBuilder: (context, state) => _fadePage(state, LevelsScreen(levels: levels)),
         ),
         GoRoute(
           path: '/solo/:id',
@@ -62,7 +63,10 @@ class PenguinBalanceApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       routerConfig: router,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF33A1D9)),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF0277BD),
+          brightness: Brightness.light,
+        ),
         useMaterial3: true,
         textTheme: baseTextTheme,
       ),

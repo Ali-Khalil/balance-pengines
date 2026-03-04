@@ -88,7 +88,11 @@ class GameState extends ChangeNotifier {
     _status = GameStatus.playing;
     _slots = buildDefaultSlots();
     _selectedPiece = null;
+    // 9 shared pieces: 3× each weight (single, double, triple)
     _availablePieces = [
+      _createPiece(1, owner: PieceOwner.shared),
+      _createPiece(2, owner: PieceOwner.shared),
+      _createPiece(3, owner: PieceOwner.shared),
       _createPiece(1, owner: PieceOwner.shared),
       _createPiece(2, owner: PieceOwner.shared),
       _createPiece(3, owner: PieceOwner.shared),
@@ -130,7 +134,7 @@ class GameState extends ChangeNotifier {
     if (_mode == GameMode.vsAi && _status == GameStatus.playing) {
       _turn = Turn.ai;
       notifyListeners();
-      Future<void>.delayed(const Duration(milliseconds: 450), _takeAiTurn);
+      Future<void>.delayed(const Duration(milliseconds: 600), _takeAiTurn);
     } else {
       notifyListeners();
     }
@@ -139,14 +143,22 @@ class GameState extends ChangeNotifier {
   void _takeAiTurn() {
     if (_mode != GameMode.vsAi || _status != GameStatus.playing) return;
 
-    final aiPiece = _selectAiPiece();
-    if (aiPiece == null) {
+    // AI plays on right side only (positive distances)
+    final hasRightSlot = _slots.any((s) => !s.isOccupied && s.distance > 0);
+    if (_availablePieces.isEmpty || !hasRightSlot) {
       _status = GameStatus.won;
       notifyListeners();
       return;
     }
 
-    final move = aiEngine.chooseMove(slots: _slots, piece: aiPiece);
+    final aiPiece = _availablePieces.first;
+
+    // Try a balanced move first; fall back to least-bad right-side slot
+    var move = aiEngine.chooseMove(slots: _slots, piece: aiPiece);
+    if (move == null || move.slotDistance <= 0) {
+      move = _pickBestRightSlot(aiPiece);
+    }
+
     if (move == null) {
       _status = GameStatus.won;
       notifyListeners();
@@ -154,7 +166,7 @@ class GameState extends ChangeNotifier {
     }
 
     _slots = _slots.map((slot) {
-      if (slot.id == move.slotId) {
+      if (slot.id == move!.slotId) {
         return slot.copyWith(occupiedPiece: aiPiece.copyWith(owner: PieceOwner.ai));
       }
       return slot;
@@ -170,30 +182,53 @@ class GameState extends ChangeNotifier {
     notifyListeners();
   }
 
-  Piece? _selectAiPiece() {
-    if (_availablePieces.isEmpty) return null;
-    final sorted = [..._availablePieces]..sort((a, b) => b.weight.compareTo(a.weight));
-
-    for (final piece in sorted) {
-      final move = aiEngine.chooseMove(slots: _slots, piece: piece);
-      if (move != null) return piece;
+  /// Picks the right-side slot (distance > 0) that minimises |torque| after placement.
+  AiMove? _pickBestRightSlot(Piece piece) {
+    AiMove? best;
+    for (final slot in _slots.where((s) => !s.isOccupied && s.distance > 0)) {
+      final simulated = _slots
+          .map((s) => s.id == slot.id ? s.copyWith(occupiedPiece: piece) : s)
+          .toList(growable: false);
+      final torque = balanceLogic.computeTorque(simulated);
+      final score = torque.abs();
+      if (best == null || score < best.score) {
+        best = AiMove(slotId: slot.id, slotDistance: slot.distance, score: score);
+      }
     }
-    return null;
+    return best;
   }
 
   void _resolveAfterMove({required Turn actor}) {
-    if (!balanceLogic.isBalanced(_torque)) {
-      _status = actor == Turn.player ? GameStatus.lost : GameStatus.won;
-      _recordCompletionIfNeeded();
+    if (_mode == GameMode.vsAi) {
+      // VS AI: only "falls over" when tilt hits the physical maximum.
+      // torqueToDegrees = torque * 2.0, maxTiltDegrees = 12 → falls when |torque| >= 6.
+      final tilted =
+          balanceLogic.torqueToAngleDegrees(_torque).abs() >= balanceLogic.maxTiltDegrees;
+      if (tilted) {
+        _status = actor == Turn.player ? GameStatus.lost : GameStatus.won;
+        _recordCompletionIfNeeded();
+        return;
+      }
+      if (_availablePieces.isEmpty) {
+        _status = balanceLogic.isBalanced(_torque) ? GameStatus.won : GameStatus.lost;
+        _recordCompletionIfNeeded();
+        return;
+      }
+      _status = GameStatus.playing;
       return;
     }
 
+    // Solo mode: original strict balance check.
+    if (!balanceLogic.isBalanced(_torque)) {
+      _status = GameStatus.lost;
+      _recordCompletionIfNeeded();
+      return;
+    }
     if (_availablePieces.isEmpty) {
       _status = GameStatus.won;
       _recordCompletionIfNeeded();
       return;
     }
-
     _status = GameStatus.playing;
   }
 
@@ -242,5 +277,4 @@ class GameState extends ChangeNotifier {
       ),
     );
   }
-
 }
