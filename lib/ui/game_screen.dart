@@ -146,25 +146,6 @@ class _GameScreenState extends State<GameScreen> {
                                 ],
                               ),
                             ),
-                            // HUD: top-center mode chip
-                            Positioned(
-                              top: 12,
-                              left: 0,
-                              right: 0,
-                              child: Center(
-                                child: _ModeChip(
-                                  vsAi: widget.vsAi,
-                                  levelName: widget.level?.name,
-                                ),
-                              ),
-                            ),
-                            // HUD: top-right turn indicator (VS AI)
-                            if (widget.vsAi)
-                              Positioned(
-                                top: 8,
-                                right: 12,
-                                child: _TurnIndicator(turn: gameState.turn),
-                              ),
                           ],
                         ),
                       ),
@@ -243,91 +224,6 @@ class _HudButton extends StatelessWidget {
           ),
           child: Icon(icon, size: 20, color: const Color(0xFF0D3349)),
         ),
-      ),
-    );
-  }
-}
-
-/// Small chip showing game mode name.
-class _ModeChip extends StatelessWidget {
-  const _ModeChip({required this.vsAi, required this.levelName});
-
-  final bool vsAi;
-  final String? levelName;
-
-  @override
-  Widget build(BuildContext context) {
-    final label = vsAi ? '🤖  VS AI' : '🎯  ${levelName ?? "Solo"}';
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.82),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.12),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-          color: Color(0xFF0D3349),
-          letterSpacing: 0.5,
-        ),
-      ),
-    );
-  }
-}
-
-/// VS AI turn indicator chip.
-class _TurnIndicator extends StatelessWidget {
-  const _TurnIndicator({required this.turn});
-
-  final Turn turn;
-
-  @override
-  Widget build(BuildContext context) {
-    final isPlayer = turn == Turn.player;
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: isPlayer
-            ? const Color(0xFFFF6B35).withValues(alpha: 0.92)
-            : Colors.white.withValues(alpha: 0.82),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            isPlayer ? Icons.person_rounded : Icons.smart_toy_rounded,
-            size: 16,
-            color: isPlayer ? Colors.white : const Color(0xFF0D3349),
-          ),
-          const SizedBox(width: 6),
-          Text(
-            isPlayer ? 'YOUR TURN' : 'AI...',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0.8,
-              color: isPlayer ? Colors.white : const Color(0xFF0D3349),
-            ),
-          ),
-        ],
       ),
     );
   }
